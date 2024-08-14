@@ -1,53 +1,80 @@
+// src/components/NoteEditor.tsx
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../store';
+import { createNote, updateNote, selectNotesStatus, selectNotesError } from '../store/noteSlice';
+import { useParams, useNavigate } from 'react-router-dom';
 
 interface NoteEditorProps {
-  noteId?: string;
+  initialNote?: {
+    id?: string;
+    title: string;
+    content: string;
+  };
 }
 
-const NoteEditor: React.FC<NoteEditorProps> = ({ noteId }) => {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+const NoteEditor: React.FC<NoteEditorProps> = ({ initialNote }) => {
+  const [title, setTitle] = useState<string>(initialNote?.title || '');
+  const [content, setContent] = useState<string>(initialNote?.content || '');
+  const dispatch: AppDispatch = useDispatch();
+  const status = useSelector((state: RootState) => selectNotesStatus(state));
+  const error = useSelector((state: RootState) => selectNotesError(state));
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate(); // Updated from useHistory
 
   useEffect(() => {
-    if (noteId) {
-      // Fetch existing note data if noteId is provided
-      const fetchNote = async () => {
-        const response = await axios.get(`http://localhost:5000/api/notes/${noteId}`);
-        setTitle(response.data.title);
-        setContent(response.data.content);
-      };
-      fetchNote();
+    if (id && !initialNote) {
+      // Fetch note if id is present and initialNote is not provided
+      // Implement fetch logic here if needed
     }
-  }, [noteId]);
+  }, [id, initialNote]);
 
-  const handleSave = async () => {
-    if (noteId) {
-      // Update existing note
-      await axios.put(`http://localhost:5000/api/notes/${noteId}`, { title, content });
+  const handleSave = () => {
+    if (initialNote) {
+      dispatch(updateNote({
+        id: initialNote.id!,
+        title,
+        content,
+        createdAt: '',
+        updatedAt: ''
+      }));
     } else {
-      // Create new note
-      await axios.post('http://localhost:5000/api/notes', { title, content });
+      dispatch(createNote({
+        title,
+        content,
+      }));
     }
+    navigate('/'); // Redirect after saving
   };
 
+  if (status === 'loading') return <p>Saving...</p>;
+  if (status === 'failed') return <p>Error: {error}</p>;
+
   return (
-    <div className="max-w-md mx-auto p-4">
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Title"
-        className="w-full p-2 border rounded mb-2"
-      />
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Content"
-        className="w-full p-2 border rounded mb-2"
-        rows={10}
-      />
-      <button onClick={handleSave} className="w-full p-2 bg-blue-500 text-white rounded">Save</button>
+    <div className="note-editor">
+      <h2>{initialNote ? 'Edit Note' : 'New Note'}</h2>
+      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+        <div>
+          <label htmlFor="title">Title</label>
+          <input
+            id="title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="content">Content</label>
+          <textarea
+            id="content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            required
+          />
+        </div>
+        <button type="submit">Save</button>
+      </form>
     </div>
   );
 };

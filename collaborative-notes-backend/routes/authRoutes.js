@@ -22,7 +22,7 @@ const authController = require('../controllers/authController');
  *           schema:
  *             type: object
  *             properties:
- *               username:
+ *               email:
  *                 type: string
  *                 format: email
  *               password:
@@ -48,7 +48,7 @@ router.post('/signup', authController.signup);
  *           schema:
  *             type: object
  *             properties:
- *               username:
+ *               email:
  *                 type: string
  *                 format: email
  *               password:

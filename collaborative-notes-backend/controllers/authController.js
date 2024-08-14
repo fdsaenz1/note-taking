@@ -7,9 +7,9 @@ const { JWT_SECRET } = require('../config/jwtConfig');
 // Sign Up
 exports.signup = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, password: hashedPassword });
+    const newUser = new User({ email, password: hashedPassword });
     await newUser.save();
     res.status(201).json({ message: 'User created' });
   } catch (error) {
@@ -20,8 +20,8 @@ exports.signup = async (req, res) => {
 // Login
 exports.login = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username });
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }

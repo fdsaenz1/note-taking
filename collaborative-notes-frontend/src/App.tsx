@@ -1,32 +1,23 @@
-// src/App.tsx
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import LoginForm from './components/LoginForm';
-import SignupForm from './components/SignupForm';
-import Dashboard from './pages/Dashboard';
-import { useAuth } from './hooks/useAuth';
-import ProtectedRoute from './components/ProtectedRoute';
+import Navbar from './components/NavBar';
+import Home from './pages/HomePage';
+import Login from './pages/LoginPage';
+import Signup from './pages/SignupPage';
+import NotFound from './pages/NotFound';
 
 const App: React.FC = () => {
-  const { isAuthenticated } = useAuth();
-
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LoginForm />} />
-        <Route path="/signup" element={<SignupForm />} />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </Router>
-  );
-}
+    return (
+        <Router>
+            <Navbar />
+            <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="*" element={<NotFound />} />
+            </Routes>
+        </Router>
+    );
+};
 
 export default App;
