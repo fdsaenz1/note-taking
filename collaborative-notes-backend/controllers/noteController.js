@@ -1,82 +1,53 @@
 // controllers/noteController.js
-
 const Note = require('../models/Note');
-const User = require('../models/User');
 
+// Create Note
 exports.createNote = async (req, res) => {
-  const { title, content } = req.body;
   try {
-    const newNote = new Note({
+    const { title, content } = req.body;
+    const note = new Note({
       title,
       content,
-      owner: req.user.id,
+      createdBy: req.user.id,
     });
-    const savedNote = await newNote.save();
-    res.status(201).json(savedNote);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    await note.save();
+    res.status(201).json(note);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
-exports.getNotes = async (req, res) => {
-  try {
-    const notes = await Note.find({ $or: [{ owner: req.user.id }, { sharedWith: req.user.id }] });
-    res.status(200).json(notes);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
+// Update Note
 exports.updateNote = async (req, res) => {
-  const { title, content } = req.body;
   try {
-    const note = await Note.findById(req.params.id);
-
+    const { id } = req.params;
+    const { title, content } = req.body;
+    const note = await Note.findByIdAndUpdate(id, { title, content, updatedAt: new Date() }, { new: true });
     if (!note) return res.status(404).json({ message: 'Note not found' });
-    if (note.owner.toString() !== req.user.id) return res.status(401).json({ message: 'Not authorized' });
-
-    note.title = title || note.title;
-    note.content = content || note.content;
-
-    const updatedNote = await note.save();
-    res.status(200).json(updatedNote);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.json(note);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
+// Delete Note
 exports.deleteNote = async (req, res) => {
   try {
-    const note = await Note.findById(req.params.id);
-
+    const { id } = req.params;
+    const note = await Note.findByIdAndDelete(id);
     if (!note) return res.status(404).json({ message: 'Note not found' });
-    if (note.owner.toString() !== req.user.id) return res.status(401).json({ message: 'Not authorized' });
-
-    await note.remove();
-    res.status(200).json({ message: 'Note removed' });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.json({ message: 'Note deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
-exports.shareNote = async (req, res) => {
-  const { userId } = req.body;
+// Get Notes
+exports.getNotes = async (req, res) => {
   try {
-    const note = await Note.findById(req.params.id);
-
-    if (!note) return res.status(404).json({ message: 'Note not found' });
-    if (note.owner.toString() !== req.user.id) return res.status(401).json({ message: 'Not authorized' });
-
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    if (note.sharedWith.includes(userId)) return res.status(400).json({ message: 'Note already shared with this user' });
-
-    note.sharedWith.push(userId);
-    await note.save();
-
-    res.status(200).json(note);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    const notes = await Note.find({ createdBy: req.user.id });
+    res.json(notes);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

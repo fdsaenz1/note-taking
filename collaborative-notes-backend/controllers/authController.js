@@ -1,40 +1,33 @@
 // controllers/authController.js
-
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const { JWT_SECRET } = require('../config/jwtConfig');
 
+// Sign Up
 exports.signup = async (req, res) => {
-  const { username, email, password } = req.body;
   try {
-    let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ message: 'User already exists' });
-
-    user = new User({ username, email, password });
-    await user.save();
-
-    const payload = { id: user.id };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    res.status(201).json({ token });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    const { username, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ username, password: hashedPassword });
+    await newUser.save();
+    res.status(201).json({ message: 'User created' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
+// Login
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
   try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
-
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
-
-    const payload = { id: user.id };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    res.status(200).json({ token });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
